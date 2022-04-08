@@ -1,0 +1,68 @@
+Box Scheme for u_t + u_x = \sin(x - t) IC u(0,x) = \sin x BC u(t,0) = -(1+t)\sin t
+
+close all
+clear all
+clc
+
+lambda = 1.2;
+H = [1/10,1/20,1/40,1/80];
+Table = [H',zeros(4,1),zeros(4,1),zeros(4,1)];
+for p = 1:4    
+    ti = 0;
+    tf = 1.2;
+    h = H(p);
+    k = h*lambda;
+    t = ti:k:tf;
+    N = length(t);
+    L = 0;
+    R = 1;
+    x = L:h:R;
+    M = length(x);
+    
+    V = sin(x);
+
+    v_old = V;
+    v_new = V;
+    j=2;
+
+    for T = t(2:end)
+        v_new(1) = -(1+T)*sin(T);
+        for X = x(2:end)
+
+            v_new(j) = (1/(2*(h+k)))*(h*(k*(sin(X - T ) + sin(X - h - T  )...
+                        +sin( X - (T - k) ) + sin( X - h - (T - k) )) - 2*v_new(j-1) + 2*v_old(j-1) + 2*v_old(j))...
+                        +2*k*(v_new(j-1) - v_old(j) + v_old(j-1)));
+            j = j+1;
+        end
+
+        v_old = v_new;
+        ue = -(1+T)*sin(-x+T);
+        j=2;
+
+        %Errors
+        sum = 0;
+        if T == t(end)
+            nrm = norm(ue - v_new,2);
+            error = h^(1/2)*nrm;
+            Table(p,2) = error;
+            infnrm = norm(v_new - ue,Inf);
+            inferror = infnrm;
+            Table(p,3) = inferror;
+        end
+        %Orders of Accuracy
+        if p > 1
+            r = log(Table(p-1,3)/Table(p,3))/log(2);
+            Table(p,4) = r;
+        end
+    end
+
+figure(2)
+subplot(2,2,p)
+plot(x,v_new,'-o',x,ue,'-k')
+title("Exact vs. Numerical for $h =$"+h,'Interpreter','latex')
+legend('Numerical','Exact','location','northwest')
+v_new = x*0;
+v_old = x*0;
+
+end
+Table
